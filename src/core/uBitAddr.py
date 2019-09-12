@@ -22,7 +22,7 @@ class uBitAddr:
     OUTPUT_PRINTER = 1
     OUTPUT_SERIAL = 2
 
-    DISPLAY_INTERVAL = 30
+    DISPLAY_INTERVAL = 60
 
     # Supported entropy sources
     # All the supported Adafruit M4 boards have a built in CRNG
@@ -114,12 +114,15 @@ class uBitAddr:
     # Prepare the data for display on the character screen
     def prep_data(self, data, colmax):
 
+        alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
         prepped_data = ""
         for i in range(0, len(data)):
             if i != 0 and i % colmax == 0:
                 prepped_data = prepped_data + "\n"
 
-            prepped_data = prepped_data + data[i]
+            if data[i] in alphabet:
+                prepped_data = prepped_data + data[i]
 
         return prepped_data
 
@@ -150,5 +153,5 @@ class uBitAddr:
 
 
 # This is the main entry point for the program
-uba = uBitAddr(output=uBitAddr.OUTPUT_SERIAL, bch=False)
+uba = uBitAddr(output=uBitAddr.OUTPUT_DISPLAY, bch=True)
 uba.generate_and_output()
