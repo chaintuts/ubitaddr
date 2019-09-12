@@ -17,9 +17,6 @@ class uBitAddr:
 
     # Class "constants"
 
-    # Base58 alphabet for data trimming (remove padding characters from module)
-    BASE58_ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
-
     # Supported output types
     OUTPUT_DISPLAY = 0
     OUTPUT_PRINTER = 1
@@ -34,10 +31,11 @@ class uBitAddr:
     ENTROPY_CRNG = 0
 
     # Initialize the object with a desired output and entropy source
-    def __init__(self, output=OUTPUT_DISPLAY, entropy_source=ENTROPY_CRNG):
+    def __init__(self, output=OUTPUT_DISPLAY, entropy_source=ENTROPY_CRNG, bch=False):
 
         self.output = output
         self.entropy_source = entropy_source
+        self.bch = bch
 
     # Wrapper that calls the right function depending on the output
     def generate_and_output(self):
@@ -51,8 +49,8 @@ class uBitAddr:
                 self.print_address_privkey(address, privkey)
             else:
                 # If another option isn't available, print to serial
-                print(address)
-                print(privkey)
+                print("Address: " + address)
+                print("Private Key (WIF): " + privkey)
         except Exception as e:
             print(e)
             print("Unable to output address and privkey")
@@ -68,7 +66,22 @@ class uBitAddr:
     # Generate address and private key
     def generate_address_privkey(self):
 
-        address, privkey = bitaddr.get_address(self.get_entropy_str(), self.get_entropy_str())
+        address, privkey = bitaddr.get_address(self.get_entropy_str(), self.get_entropy_str(), self.bch)
+
+        # Strip extra buffer garbage
+        # The buffer is currently 70 characters on the C side to be safe,
+        # but the data won't fill that and we'll see some garbage on the Python side.
+        # Note that address lengths can vary a few characters depending on the address type.
+        # However here we use a constant, known address generation scheme for basic P2PKH addresses,
+        # and can therefore safely use a constant size.
+        # Fixing this on the firmware side would be a good future item to address
+        if self.bch:
+            address = address.replace("bitcoincash:", "")
+            address = address[:42]
+        else:
+            address = address[:34]
+
+        privkey = privkey[:51]
 
         return (address, privkey)
 
@@ -106,8 +119,7 @@ class uBitAddr:
             if i != 0 and i % colmax == 0:
                 prepped_data = prepped_data + "\n"
 
-            if data[i] in self.BASE58_ALPHABET:
-                prepped_data = prepped_data + data[i]
+            prepped_data = prepped_data + data[i]
 
         return prepped_data
 
@@ -138,5 +150,5 @@ class uBitAddr:
 
 
 # This is the main entry point for the program
-uba = uBitAddr(output=uBitAddr.OUTPUT_DISPLAY)
+uba = uBitAddr(output=uBitAddr.OUTPUT_SERIAL, bch=False)
 uba.generate_and_output()

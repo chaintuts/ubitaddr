@@ -10,7 +10,7 @@
 #include "ecdsa.h"
 #include "rand.h"
 #include "base58.h"
-
+#include "cash_addr.h"
 
 #include <stdio.h>
 
@@ -23,6 +23,9 @@ size_t ADDRESS_LENGTH = 40;
 size_t RAW_PRIVKEY_NOCHECK_LENGTH = 33;
 size_t RAW_PRIVKEY_CHECK_LENGTH = 37;
 size_t PRIVKEY_WIF_LENGTH = 70;
+
+#define CASHADDR_P2PKH_BITS (0)
+#define CASHADDR_RIPEMD160_BITS (0)
 
 // Define helper functions that aren't directly accessible to Python
 
@@ -76,6 +79,25 @@ void address_from_pubkey(const unsigned char pubkey[PUBKEY_65_LENGTH], unsigned 
 	b58enc((char*) address, &ADDRESS_LENGTH, raw_address_check, RAW_ADDRESS_CHECK_LENGTH);
 }
 
+// Generate address from pubkey
+void cash_address_from_pubkey(const unsigned char pubkey[PUBKEY_65_LENGTH], unsigned char address[ADDRESS_LENGTH])
+{
+	// First, "double hash" the public key
+	unsigned char round_1[SHA256_DIGEST_LENGTH];
+	unsigned char round_2[RIPEMD160_DIGEST_LENGTH];
+
+	sha256_Raw((uint8_t*) pubkey, PUBKEY_65_LENGTH, (uint8_t*) round_1);
+	ripemd160((uint8_t*) round_1, SHA256_DIGEST_LENGTH, (uint8_t*) round_2);
+
+	// Add the version specifier
+	unsigned char raw_address_nocheck[RAW_ADDRESS_NOCHECK_LENGTH];
+	raw_address_nocheck[0] = CASHADDR_P2PKH_BITS | CASHADDR_RIPEMD160_BITS;
+	memcpy(raw_address_nocheck + 1, round_2, RIPEMD160_DIGEST_LENGTH);
+
+	// Cashaddr  encode
+	cash_addr_encode((char*) address, "bitcoincash", raw_address_nocheck, RAW_ADDRESS_NOCHECK_LENGTH);
+}
+
 void privkey_wif_from_raw(unsigned char* privkey_raw, unsigned char* privkey)
 {
 	
@@ -106,8 +128,9 @@ void privkey_wif_from_raw(unsigned char* privkey_raw, unsigned char* privkey)
 	b58enc((char*) privkey, &PRIVKEY_WIF_LENGTH, raw_privkey_check, RAW_PRIVKEY_CHECK_LENGTH);
 }
 
+
 // Define functions that implement the Python API
-void shared_modules_bitaddr_get_address_privkey(unsigned char* address, unsigned char* privkey, const char* entropy_privkey, const char* entropy_ecdsa)
+void shared_modules_bitaddr_get_address_privkey(unsigned char* address, unsigned char* privkey, const char* entropy_privkey, const char* entropy_ecdsa, int bch)
 {
 	// Init the random32 for rand.h and ecdsa.h functions
 	// The random function is only needed for curve_to_jacobian - needs a random k value
@@ -116,7 +139,6 @@ void shared_modules_bitaddr_get_address_privkey(unsigned char* address, unsigned
 	unsigned char seed_entropy[SHA256_DIGEST_LENGTH];
 	sha256_Raw((uint8_t*) entropy_ecdsa, strlen(entropy_ecdsa), (uint8_t*) seed_entropy);
 	init_random32(seed_entropy);
-
 
 	// Generate the private key from some entropy
 	// Then generate the public key from the private key
@@ -127,9 +149,16 @@ void shared_modules_bitaddr_get_address_privkey(unsigned char* address, unsigned
 	pubkey_from_privkey(privkey_raw, pubkey);
 
 	// Generate the address from the public key
-	// This address will use the legacy base58check encoding valid
-	// in both BTC and BCH
-	address_from_pubkey(pubkey, address);
+	// This address can use the legacy base58check encoding valid
+	// in both BTC and BCH, or BCH cashaddr
+	if (bch)
+	{
+		cash_address_from_pubkey(pubkey, address);
+	}
+	else
+	{
+		address_from_pubkey(pubkey, address);
+	}
 
 	// Convert the private key to WIF format for export
 	privkey_wif_from_raw(privkey_raw, privkey);
