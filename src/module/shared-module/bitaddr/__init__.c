@@ -24,8 +24,12 @@ size_t RAW_PRIVKEY_NOCHECK_LENGTH = 33;
 size_t RAW_PRIVKEY_CHECK_LENGTH = 37;
 size_t PRIVKEY_WIF_LENGTH = 70;
 
+// Version bit data
+// The defines are taken from Trezor examples
 #define CASHADDR_P2PKH_BITS (0)
 #define CASHADDR_RIPEMD160_BITS (0)
+unsigned char BTC_ADDR_PREFIX = 0x0;
+unsigned char BTC_WIF_PREFIX = 0x80;
 
 // Define helper functions that aren't directly accessible to Python
 
@@ -43,7 +47,7 @@ void privkey_from_entropy(const char* entropy, unsigned char privkey[SHA256_DIGE
 }
 
 // Generate address from pubkey
-void address_from_pubkey(const unsigned char pubkey[PUBKEY_65_LENGTH], unsigned char address[ADDRESS_LENGTH])
+void address_from_pubkey(const unsigned char pubkey[PUBKEY_65_LENGTH], unsigned char version_prefix, unsigned char address[ADDRESS_LENGTH])
 {
 	// First, "double hash" the public key
 	unsigned char round_1[SHA256_DIGEST_LENGTH];
@@ -54,7 +58,7 @@ void address_from_pubkey(const unsigned char pubkey[PUBKEY_65_LENGTH], unsigned 
 
 	// Add the version specifier
 	unsigned char raw_address_nocheck[RAW_ADDRESS_NOCHECK_LENGTH];
-	raw_address_nocheck[0] = 0;
+	raw_address_nocheck[0] = version_prefix;
 	memcpy(raw_address_nocheck + 1, round_2, RIPEMD160_DIGEST_LENGTH);
 
 	// Generate a checksum
@@ -98,12 +102,12 @@ void cash_address_from_pubkey(const unsigned char pubkey[PUBKEY_65_LENGTH], unsi
 	cash_addr_encode((char*) address, "bitcoincash", raw_address_nocheck, RAW_ADDRESS_NOCHECK_LENGTH);
 }
 
-void privkey_wif_from_raw(unsigned char* privkey_raw, unsigned char* privkey)
+void privkey_wif_from_raw(unsigned char* privkey_raw, unsigned char version_prefix, unsigned char* privkey)
 {
 	
 	// Add the version specifier
 	unsigned char raw_privkey_nocheck[RAW_PRIVKEY_NOCHECK_LENGTH];
-	raw_privkey_nocheck[0] = 0x80;
+	raw_privkey_nocheck[0] = version_prefix;
 	memcpy(raw_privkey_nocheck + 1, privkey_raw, SHA256_DIGEST_LENGTH);
 
 	// Generate a checksum
@@ -117,7 +121,7 @@ void privkey_wif_from_raw(unsigned char* privkey_raw, unsigned char* privkey)
 
 
 	// Finalize the raw WIF format privkey
-	// 1 byte for the version string - 0x80 for mainnet
+	// 1 byte for the version string - 0x80 for mainneti BTC/BCH
 	// 32 bytes for the raw private key data
 	// 4 bytes for the checksum
 	unsigned char raw_privkey_check[RAW_PRIVKEY_CHECK_LENGTH];
@@ -157,10 +161,10 @@ void shared_modules_bitaddr_get_address_privkey(unsigned char* address, unsigned
 	}
 	else
 	{
-		address_from_pubkey(pubkey, address);
+		address_from_pubkey(pubkey, BTC_ADDR_PREFIX, address);
 	}
 
 	// Convert the private key to WIF format for export
-	privkey_wif_from_raw(privkey_raw, privkey);
+	privkey_wif_from_raw(privkey_raw, BTC_WIF_PREFIX, privkey);
 }
 
