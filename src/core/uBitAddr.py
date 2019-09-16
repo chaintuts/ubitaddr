@@ -30,11 +30,17 @@ class uBitAddr:
     # accelerometers, diceware, etc. for entropy
     ENTROPY_CRNG = 0
 
+    # Supported currencies
+    # BTC and BCH are the default
+    BTCBCH = 0
+    LTC = 1
+
     # Initialize the object with a desired output and entropy source
-    def __init__(self, output=OUTPUT_DISPLAY, entropy_source=ENTROPY_CRNG, bch=False):
+    def __init__(self, output=OUTPUT_DISPLAY, entropy_source=ENTROPY_CRNG, currency=BTCBCH, bch=False):
 
         self.output = output
         self.entropy_source = entropy_source
+        self.currency = currency
         self.bch = bch
 
     # Wrapper that calls the right function depending on the output
@@ -66,7 +72,10 @@ class uBitAddr:
     # Generate address and private key
     def generate_address_privkey(self):
 
-        address, privkey = bitaddr.get_address(self.get_entropy_str(), self.get_entropy_str(), self.bch)
+        if self.currency == self.LTC:
+            address, privkey = bitaddr.get_address_ltc(self.get_entropy_str(), self.get_entropy_str())
+        else:
+            address, privkey = bitaddr.get_address(self.get_entropy_str(), self.get_entropy_str(), self.bch)
 
         # Strip extra buffer garbage
         # The buffer is currently 70 characters on the C side to be safe,
@@ -153,5 +162,5 @@ class uBitAddr:
 
 
 # This is the main entry point for the program
-uba = uBitAddr(output=uBitAddr.OUTPUT_DISPLAY, bch=True)
+uba = uBitAddr(output=uBitAddr.OUTPUT_SERIAL, currency=uBitAddr.LTC)
 uba.generate_and_output()
