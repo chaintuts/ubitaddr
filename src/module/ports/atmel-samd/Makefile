@@ -303,7 +303,8 @@ SRC_SHARED_MODULE_EXPANDED += shared-bindings/bitaddr/__init__.c \
 			      shared-module/bitaddr/bignum.c \
 			      shared-module/bitaddr/secp256k1.c \
 			      shared-module/bitaddr/ecdsa.c \
-			      shared-module/bitaddr/cash_addr.c
+			      shared-module/bitaddr/cash_addr.c \
+			      shared-module/bitaddr/sha3.c
 
 SRC_S = supervisor/$(CHIP_FAMILY)_cpu.s
 

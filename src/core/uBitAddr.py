@@ -34,6 +34,7 @@ class uBitAddr:
     # BTC and BCH are the default
     BTCBCH = 0
     LTC = 1
+    ETH = 2
 
     # Initialize the object with a desired output and entropy source
     def __init__(self, output=OUTPUT_DISPLAY, entropy_source=ENTROPY_CRNG, currency=BTCBCH, bch=False):
@@ -42,6 +43,12 @@ class uBitAddr:
         self.entropy_source = entropy_source
         self.currency = currency
         self.bch = bch
+
+        if currency == self.ETH:
+            self.privkey_format = "(HEX)"
+        else:
+            self.privkey_format = "(WIF)"
+
 
     # Wrapper that calls the right function depending on the output
     def generate_and_output(self):
@@ -56,7 +63,7 @@ class uBitAddr:
             else:
                 # If another option isn't available, print to serial
                 print("Address: " + address)
-                print("Private Key (WIF): " + privkey)
+                print("Private Key " + self.privkey_format + ": " + privkey)
         except Exception as e:
             print(e)
             print("Unable to output address and privkey")
@@ -74,6 +81,8 @@ class uBitAddr:
 
         if self.currency == self.LTC:
             address, privkey = bitaddr.get_address_ltc(self.get_entropy_str(), self.get_entropy_str())
+        elif self.currency == self.ETH:
+            address, privkey = bitaddr.get_address_eth(self.get_entropy_str(), self.get_entropy_str())
         else:
             address, privkey = bitaddr.get_address(self.get_entropy_str(), self.get_entropy_str(), self.bch)
 
@@ -84,13 +93,17 @@ class uBitAddr:
         # However here we use a constant, known address generation scheme for basic P2PKH addresses,
         # and can therefore safely use a constant size.
         # Fixing this on the firmware side would be a good future item to address
-        if self.bch:
-            address = address.replace("bitcoincash:", "")
+        if self.currency == self.ETH:
             address = address[:42]
+            privkey = privkey[:66]
         else:
-            address = address[:34]
+            if self.bch:
+                address = address.replace("bitcoincash:", "")
+                address = address[:42]
+            else:
+                address = address[:34]
 
-        privkey = privkey[:51]
+            privkey = privkey[:51]
 
         return (address, privkey)
 
@@ -115,7 +128,7 @@ class uBitAddr:
 
         if print_privkey:
             printer.feed(3)
-            printer.print("Private Key (WIF):")
+            printer.print("Private Key " + self.privkey_format + ": " + privkey)
             printer.print(privkey)
 
         printer.feed(3)
@@ -156,11 +169,14 @@ class uBitAddr:
 
             lcd.clear()
             privkey = self.prep_data(privkey, cols)
-            lcd.message = "Private Key (WIF):\n" + privkey
+            if self.currency == self.ETH:
+                lcd.message = privkey
+            else:
+                lcd.message = "Private Key " + self.privkey_format + ": \n" + privkey
 
             time.sleep(self.DISPLAY_INTERVAL)
 
 
 # This is the main entry point for the program
-uba = uBitAddr(output=uBitAddr.OUTPUT_SERIAL, currency=uBitAddr.LTC)
+uba = uBitAddr(output=uBitAddr.OUTPUT_DISPLAY, currency=uBitAddr.ETH)
 uba.generate_and_output()
