@@ -35,6 +35,7 @@ class uBitAddr:
     BTCBCH = 0
     LTC = 1
     ETH = 2
+    DGB = 3
 
     # Initialize the object with a desired output and entropy source
     def __init__(self, output=OUTPUT_DISPLAY, entropy_source=ENTROPY_CRNG, currency=BTCBCH, bch=False):
@@ -83,6 +84,8 @@ class uBitAddr:
             address, privkey = bitaddr.get_address_ltc(self.get_entropy_str(), self.get_entropy_str())
         elif self.currency == self.ETH:
             address, privkey = bitaddr.get_address_eth(self.get_entropy_str(), self.get_entropy_str())
+        elif self.currency == self.DGB:
+            address, privkey = bitaddr.get_address_dgb(self.get_entropy_str(), self.get_entropy_str())
         else:
             address, privkey = bitaddr.get_address(self.get_entropy_str(), self.get_entropy_str(), self.bch)
 
@@ -178,5 +181,5 @@ class uBitAddr:
 
 
 # This is the main entry point for the program
-uba = uBitAddr(output=uBitAddr.OUTPUT_DISPLAY, currency=uBitAddr.ETH)
+uba = uBitAddr(output=uBitAddr.OUTPUT_DISPLAY, currency=uBitAddr.DGB)
 uba.generate_and_output()

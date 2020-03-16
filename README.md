@@ -30,7 +30,9 @@ Clean the build directory
 * Follow the CircuitPython build instructions for M4 boards (ItsyBitsy M4, Grand Central M4, Metro M4)
 
 ### Features
-* Generate a random Bitcoin private key (WIF format) and address (Legacy format)
+* Generate a random private key and associated address for Bitcoin, Bitcoin Cash, Litecoin, Ethereum, and DigiByte
+* Key formats include WIF (BTC, BCH, LTC, DGB) and HEX (ETH)
+* Address formats include Legacy Base58 (BTC, LTC, DGB), CashAddr (BCH), and HEX (ETH)
 * Display the address and private key on a character LCD screen, rotating every 30 seconds
 * Print the address and private key via a thermal receipt printer
 

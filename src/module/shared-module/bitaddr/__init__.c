@@ -37,6 +37,8 @@ unsigned char BTC_ADDR_PREFIX = 0x0;
 unsigned char BTC_WIF_PREFIX = 0x80;
 unsigned char LTC_ADDR_PREFIX = 0x30;
 unsigned char LTC_WIF_PREFIX = 0xB0;
+unsigned char DGB_ADDR_PREFIX = 0x1E;
+unsigned char DGB_WIF_PREFIX = 0x80;
 
 // Define helper functions that aren't directly accessible to Python
 
@@ -256,6 +258,32 @@ void shared_modules_bitaddr_get_address_privkey_ltc(unsigned char* address, unsi
 	privkey_wif_from_raw(privkey_raw, LTC_WIF_PREFIX, privkey);
 }
 
+
+// This function generates a keypair for Digibyte, with the same steps as BTC. The only difference is the address version prefix and WIF privkey version prefix
+void shared_modules_bitaddr_get_address_privkey_dgb(unsigned char* address, unsigned char* privkey, const char* entropy_privkey, const char* entropy_ecdsa)
+{
+	// Init the random32 for rand.h and ecdsa.h functions
+	// The random function is only needed for curve_to_jacobian - needs a random k value
+	// It will only be called once for address generation, so we'll use true entropy
+	// To "seed" random32's PRNG without causing problems
+	unsigned char seed_entropy[SHA256_DIGEST_LENGTH];
+	sha256_Raw((uint8_t*) entropy_ecdsa, strlen(entropy_ecdsa), (uint8_t*) seed_entropy);
+	init_random32(seed_entropy);
+
+	// Generate the private key from some entropy
+	// Then generate the public key from the private key
+	unsigned char privkey_raw[SHA256_DIGEST_LENGTH];
+	privkey_from_entropy(entropy_privkey, privkey_raw);
+
+	unsigned char pubkey[PUBKEY_65_LENGTH];
+	pubkey_from_privkey(privkey_raw, pubkey);
+
+	address_from_pubkey(pubkey, DGB_ADDR_PREFIX, address);
+
+	// Convert the private key to WIF format for export
+	privkey_wif_from_raw(privkey_raw, DGB_WIF_PREFIX, privkey);
+}
+
 // This function generates a keypair for Ethereum
 void shared_modules_bitaddr_get_address_privkey_eth(unsigned char* address, unsigned char* privkey, const char* entropy_privkey, const char* entropy_ecdsa)
 {
@@ -280,3 +308,4 @@ void shared_modules_bitaddr_get_address_privkey_eth(unsigned char* address, unsi
 	// Convert the private key to hex format for export
 	privkey_hex_from_raw(privkey_raw, privkey);
 }
+
