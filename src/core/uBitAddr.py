@@ -12,7 +12,7 @@ import adafruit_thermal_printer
 import adafruit_character_lcd.character_lcd_i2c as character_lcd
 import bitaddr
 
-# This class implements a basic Bitcoin hardware wallet
+# This class implements a basic keypair generator for supported cryptocurrencies
 class uBitAddr:
 
     # Class "constants"
@@ -54,9 +54,9 @@ class uBitAddr:
     # Wrapper that calls the right function depending on the output
     def generate_and_output(self):
 
-        address, privkey = self.generate_address_privkey()
-
         try:
+            address, privkey = self.generate_address_privkey()
+
             if self.output == self.OUTPUT_DISPLAY:
                 self.display_address_privkey(address, privkey)
             elif self.output == self.OUTPUT_PRINTER:
